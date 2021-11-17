@@ -3,14 +3,88 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
 
+    //#region Constants and Hard Coded stuff.
+    //This must be either updated to be dynamic, or must be manually updated whenever there is a pojrect name change
+    //Eventually this should be made dynamic.
+    _getProjectList: function()
+    {
+        project_list =
+        [ 
+            'Austin Avengers - RD',
+            'Mountaineers - RD',
+            'Next Gen Merchandising - RD',
+            'Prestige Worldwide - RD',
+            'Money Train - RD', 
+            'Quarantiners - RD',
+            'Tejas - RD (Snaplot / DigitalLot)',
+            'Phoenix - RD',
+            'Thundercats - RD'
+        ];
+        return project_list;
+        
+    },
+    //#endregion
 
+    //#region App Flow
     launch: function() {
         this._loadData();
     },
-
-    _getRallyBacklogHealthModel: function()
+    _loadIterations: function(store)
     {
-        rbhModel = Ext.define('rbh_model', {
+        this.iterations_loaded = true;
+        this._loadFeaturesData();
+    },
+    _loadFeatures: function(store)
+    {
+        this.features_loaded = true;
+        this._loadFeatureGrid(store)
+        this._loadEpicsData();
+    },
+    _loadEpics: function(store)
+    {
+        this.epics_loaded = true;
+        this._loadEpicsGrid(store);
+        this._loadUserStoryData();
+    },
+    //#endregion
+
+    //#region Custom Models
+    _getGroupedFeatureModel: function()
+    {
+        console.log("_getGroupedFeatureModel");
+        var featureModel = Ext.define('feature_model', {
+            extend: 'Ext.data.Model',
+            fields: [
+                {name: 'project', type: 'string'},
+                {name: 'teamsprints', type: 'float'},
+                {name: 'targetteamsprints', type: 'string'},
+                {name: 'ratio', type: 'string'}
+            ]
+        });
+        return featureModel;
+    },
+
+    //Note:  The epic model is not grouped.  All epics are rolled up to the Merchandising - RD level, regardless of whether they
+    //are set for Next Gen Merchandising - RD or Merchandising - RD.  No epics should be at the team level.
+    // Refactor idea -- the getGroupedFeatureModel and the getEpicModel functions are identical.  Should probably just create a 
+    //PortfolioItem model.
+    _getEpicModel: function(){
+        var epicModel = Ext.define('epic_model', {
+            extend: 'Ext.data.Model',
+            fields: [
+                {name: 'project', type: 'string'},
+                {name: 'teamsprints', type: 'float'},
+                {name: 'targetteamsprints', type: 'string'},
+                {name: 'ratio', type: 'string'}
+            ]
+        });
+        
+        return epicModel;
+    },
+
+    _getGroupedUserStoryModel: function()
+    {
+        var rbhModel = Ext.define('rbh_model', {
             extend: 'Ext.data.Model',
             fields: [
                 {name: 'project',     type: 'string'},
@@ -25,6 +99,9 @@ Ext.define('CustomApp', {
         
         return rbhModel;
     },
+    //#endregion
+    
+    //#region Helper and Calculation Functions
     _getEstimateSum: function(childrenArray)
     {
         var totalEstimate = 0;
@@ -36,8 +113,125 @@ Ext.define('CustomApp', {
 
         return totalEstimate;
     },
+    _getEpicTeamSprints: function(store){
+        var totalTeamSprints = 0;
+        for(var i=0; i <store.data.items.length; i++)
+        {
+            if(store.data.items[i].get("PreliminaryEstimate")){
+                switch( store.data.items[i].get("PreliminaryEstimate").Name) 
+                {
+                    case "XS":
+                        totalTeamSprints += 1;
+                        break;
+                    case "S":
+                        totalTeamSprints += 1.5;
+                        break;
+                    case "M":
+                        totalTeamSprints += 3.5;
+                        break;
+                    case "L":
+                        totalTeamSprints += 6;
+                        break;
+                    case "XL":
+                        totalTeamSprints += 9;
+                        break;    
+                }
+            }
+        }
 
-    _buildProjectGroupJson: function(project_name, projectData){
+        return totalTeamSprints;
+    },
+    _getFeatureTeamSprints: function(childrenArray){
+        var totalTeamSprints = 0;
+
+        console.log("_getFeatureTeamSprints", childrenArray);
+
+        for(var i=0; i <childrenArray.length; i++)
+        {
+            console.log("Adding Feature Sprints", childrenArray[i].data.PreliminaryEstimate.Name);
+            switch(childrenArray[i].data.PreliminaryEstimate.Name) 
+            {
+                case "XS":
+                    totalTeamSprints += .5;
+                    break;
+                case "S":
+                    totalTeamSprints += 1;
+                    break;
+                case "M":
+                    totalTeamSprints += 2.5;
+                    break;
+                case "L":
+                    totalTeamSprints += 4;
+                    break;
+                case "XL":
+                    totalTeamSprints += 6;
+                    break;    
+            }
+        }
+
+        return totalTeamSprints;
+    },
+
+    _getVelocityForProject: function(project_name)
+    {
+        var plan_estimate = 0;
+        var number_of_sprints;
+
+        var groupedIterations = this.iterationDataStore.getGroups();
+
+        for (var x= 0; x < groupedIterations.length; x++)
+        {
+            if(groupedIterations[x].name === project_name)
+            { 
+                number_of_sprints = groupedIterations[x].children.length;
+                for( var y = 0; y < number_of_sprints; y++)
+                {
+                    plan_estimate += groupedIterations[x].children[y].get('PlanEstimate');
+                }
+            }
+        }
+
+        return plan_estimate / number_of_sprints;
+    },
+
+    //#endregion
+
+    //#region Json Builder Functions
+    //Note:  There is no _buildProjectEpicJson because there is only one project.  It is all handled in the root _buildEpicJson.
+
+    _buildProjectFeatureJson: function(project_name, projectData)
+    {
+        console.log("_buildProjectFeatureJson", project_name, projectData);
+
+        var projectObject = {};
+
+        if(projectData === null)
+        {
+            projectObject.project = project_name;
+            projectObject.teamsprints =0;
+            projectObject.targetteamsprints = 6;
+            projectObject.ratio = '0%';
+            return projectObject;
+        }
+
+        projectObject.project = project_name,
+        projectObject.teamsprints = this._getFeatureTeamSprints(projectData);
+        projectObject.targetteamsprints = 6;
+        var v = projectObject.teamsprints / projectObject.targetteamsprints     
+        if(!isFinite(v)){
+            v = "-";
+        }else{
+            v = Math.round(v * 100).toString() + '%';
+        }
+        projectObject.ratio = v;
+
+        console.log("_buildProjectFeatureJason-RETURN", projectObject);
+
+        return projectObject;
+    },
+
+
+    _buildProjectUserStoryJson: function(project_name, projectData){
 
         var projectObject = {};
 
@@ -47,9 +241,7 @@ Ext.define('CustomApp', {
         projectObject.averagevelocity = Math.round(this._getVelocityForProject(project_name));
         projectObject.targetdepth = projectObject.averagevelocity * 2;
 
-        v = projectObject.totalestimate / projectObject.targetdepth;
-
-        console.log("V::::::::::::::", v)
+        var v = projectObject.totalestimate / projectObject.targetdepth;
 
         if(!isFinite(v)){
             v = "-";
@@ -62,27 +254,110 @@ Ext.define('CustomApp', {
         return projectObject;        
     },
 
-    _buildJson: function(data){
 
-        _jSon = {};
+    _buildFeatureJson: function(data)
+    {
+        console.log("_buildFeatureJson", data)
+        var _json = {};
+        _json.projects = [];
+
+        project_list = this._getProjectList();
+        loaded_projects = [];
+
+        for (var x=0; x<data.length; x++)
+        {
+            _json.projects.push(this._buildProjectFeatureJson(data[x].name, data[x].children));
+            loaded_projects.push(data[x].name);
+        }
+
+        for (var a =0; a<project_list.length; a++)
+        {
+            //A project does not have feature data. then we need a blank object.
+            if(!loaded_projects.includes(project_list[a]))
+            {
+                _json.projects.push(this._buildProjectFeatureJson(project_list[a], null));
+            }
+        }
+        console.log("_buildFeatureJson-RETURN", _json);
+        return _json;
+    },
+    _buildEpicJson: function(data){
+        console.log("_buildEpicJson", data)
+        var _jSon = {};
+
+        _jSon.epics = {}
+
+        _jSon.epics.project = "Merchandising - RD";
+        _jSon.epics.targetteamsprints = 8*7;
+        _jSon.epics.teamsprints = this._getEpicTeamSprints(data);
+        _jSon.epics.ratio =Math.round(_jSon.epics.teamsprints /_jSon.epics.targetteamsprints * 100).toString() +'%';
+
+        return _jSon;
+
+    },
+    _buildUserStoryJson: function(data){
+
+        var _jSon = {};
         _jSon.projects = [];
 
         for (var x= 0; x < data.length; x++)
         {
-            _jSon.projects.push(this._buildProjectGroupJson(data[x].name, data[x].children));
+            _jSon.projects.push(this._buildProjectUserStoryJson(data[x].name, data[x].children));
         }
 
         return _jSon;
 
     },
+    //#endregion
 
-    _getRallyBacklogHealthStore: function(groupedData){
+    //#region Creating the Data Stores
+    _getFeatureStore: function(groupedData){
 
-        jData = this._buildJson(groupedData);
+        var jData = this._buildFeatureJson(groupedData);
+
+        var rallyFeatureStore = Ext.create('Ext.data.JsonStore', {
+            model: this._getGroupedFeatureModel(),
+            autoLoad: true,
+            data: jData,
+            proxy: {
+                type: 'memory',
+                reader: {
+                    type: 'json',
+                    root: 'projects'
+                }
+            }
+        });
+
+        return rallyFeatureStore;
+    },
+    _getEpicStore: function(store){
+
+        console.log("_getEpicStore", store);
+
+        var jData = this._buildEpicJson(store);
+
+        var rallyEpicStore = Ext.create('Ext.data.JsonStore', {
+            model: this._getEpicModel(),
+            autoLoad: true,
+            data: jData,
+            proxy: {
+                type: 'memory',
+                reader: {
+                    type: 'json',
+                    root: 'epics'
+                }
+            }
+        });
+
+        return rallyEpicStore;
+    },
+    _getUserStoryStore: function(groupedData){
+
+        var jData = this._buildUserStoryJson(groupedData);
 
 
         var rallybhStore = Ext.create('Ext.data.JsonStore', {
-            model: this._getRallyBacklogHealthModel(),
+            model: this._getGroupedUserStoryModel(),
             autoLoad: true,
             data: jData,
             proxy: {
@@ -96,44 +371,53 @@ Ext.define('CustomApp', {
 
         return rallybhStore;
     },
-
-    _getVelocityForProject: function(project_name)
-    {
-        var plan_estimate = 0;
-        var number_of_sprints;
-
-        groupedIterations = this.iterationDataStore.getGroups();
-
-        for (var x= 0; x < groupedIterations.length; x++)
-        {
-            if(groupedIterations[x].name == project_name)
-            { 
-                number_of_sprints = groupedIterations[x].children.length;
-                for( var y = 0; y < number_of_sprints; y++)
-                {
-                    plan_estimate += groupedIterations[x].children[y].get('PlanEstimate');
-                }
-            }
-        }
-
-        return plan_estimate / number_of_sprints;
-    },
-
-
-
-
-
-
+    //#endregion
+    
     //#region FILTERS
-    _epicFilters: function()
-    {},
+    _epicFilters: function(){
+        var merchandisingFilter = Ext.create('Rally.data.wsapi.Filter',{
+            property: "Project.Name",
+            operator: "=",
+            value: "Merchandising - RD"
+        });
+        var nextGenMerchandisingFilter= Ext.create('Rally.data.wsapi.Filter',{
+            property: "Project.Name",
+            operator: "=",
+            value: "Next Gen Merchandising - RD"
+        });
 
+        var projectFilters = nextGenMerchandisingFilter.or(merchandisingFilter);
+
+        var prioritizedBacklogFilter = Ext.create('Rally.data.wsapi.Filter',{
+            property: "State",
+            operator: "=",
+            value: "Feature Planning"
+        });
+        var featurePlanningFilter = Ext.create('Rally.data.wsapi.Filter',{
+            property: "State",
+            operator: "=",
+            value: "Prioritized Backlog"
+        });
+
+        var stateFilters = prioritizedBacklogFilter.or(featurePlanningFilter);
+
+        console.log("EPIC FILTER: ", projectFilters.and(stateFilters).toString());
+        return projectFilters.and(stateFilters);
+
+    },
+    _featureFilters: function(){
+        var readyFilter = Ext.create('Rally.data.wsapi.Filter',{
+            property: "State",
+            operator: "=",
+            value: "Ready"
+        });
+        return readyFilter;
+    },
     _iterationFilters: function()
     {
 
-        console.log("Building filters....")
-        startDate = new Date();
-        startDate2 = new Date();
+        var startDate = new Date();
+        var startDate2 = new Date();
         startDate2.setDate(startDate.getDate() - 90);
 
         var startDateFilter1 = Ext.create('Rally.data.wsapi.Filter',{
@@ -151,15 +435,13 @@ Ext.define('CustomApp', {
 
         
 
-        filters = startDateFilter1.and(startDateFilter2);
+        var filters = startDateFilter1.and(startDateFilter2);
         
         console.log(filters.toString());
         return filters;
          
     
     },
-
-    _featureFilters: function(){},
 
     _defaultFilters: function(){
         var definedFilter = Ext.create('Rally.data.wsapi.Filter',{
@@ -185,11 +467,14 @@ Ext.define('CustomApp', {
     //#endregion
 
     //#region load data methods
-
+    _loadData: function()
+    {
+        this._loadIterationData();
+    },
     _loadIterationData: function()
     {
-        myFilters = this._iterationFilters();
-        console.log("Loading iteration data......")
+        var myFilters = this._iterationFilters();
+
         this.iterationDataStore = Ext.create('Rally.data.wsapi.Store',
         {
             model: 'Iteration',
@@ -207,44 +492,46 @@ Ext.define('CustomApp', {
             },
             fetch: ["Name", "StartDate", "EndDate", "Project", "PlanEstimate", "PlannedVelocity" ]
         });
-
-
-        this._loadFeaturesData();
-
     },
-    _loadFeaturesData: function()
-    {
-        this.featureDataStore = Ext.create('Rally.data.wsapi.Store',
-        {
-            model: 'PortfolioItem/Feature',
-            autoLoad: true,
-            listeners: {
-                scope: this,
-                load: this._loadFeatures
-            },
-            fetch: ["Name", "FormattedID", "Project"]
-        });
-
-
-        this._loadEpicsData();
-    },
-
     _loadEpicsData: function()
     {
+        var epicFilters = this._epicFilters();
+
         this.epicDataStore = Ext.create('Rally.data.wsapi.Store',
         {
             model: 'PortfolioItem/Epic',
             autoLoad: true,
+            filters: epicFilters,
             listeners: {
                 scope: this,
                 load: this._loadEpics
             },
-            fetch: ["Name", "FormattedID", "Project"]
+            fetch: ["Name", "FormattedID", "Project", "State", "PreliminaryEstimate", "PreliminaryEstimateValue"]
         });
-        
-        this._loadUserStoryData();
     },
+    _loadFeaturesData: function()
+    {
+        var featureFilters = this._featureFilters(); //Filters specific for features
 
+        this.featureDataStore = Ext.create('Rally.data.wsapi.Store',
+        {
+            model: 'PortfolioItem/Feature',
+            autoLoad: true,
+            filters: featureFilters,
+            groupField: 'Project',
+            groupDir: 'ASC',
+            pageSize: 1000,
+            listeners: {
+                scope: this,
+                load: this._loadFeatures
+            },
+            getGroupString: function(record) {
+                var proj = record.get('Project');
+                return (proj && proj._refObjectName) || 'No Project';
+            },
+            fetch: ["Project", "Name", "FormattedID", "State", "PreliminaryEstimate", "PreliminaryEstimateValue"]
+        });
+    },
     _loadUserStoryData: function()
     {
         var defFilters = this._defaultFilters();
@@ -254,11 +541,11 @@ Ext.define('CustomApp', {
                 autoLoad: true,
                 filters: defFilters,
                 groupField: 'Project',
-                groupDir: 'DESC',
+                groupDir: 'ASC',
                 pageSize: 1000,
                 listeners: {
                     scope: this,
-                    load: this._loadGrid
+                    load: this._loadUserStoryGrid
                 },
                 getGroupString: function(record) {
                     var proj = record.get('Project');
@@ -268,21 +555,12 @@ Ext.define('CustomApp', {
             }
         );
     },
-
     //#endregion
 
-    _loadData: function()
-    {
-        this._loadIterationData();
-    },
-    
-
+    //#region Grids & UI Helpers
     _colorcode: function(value)
     {
-
-        
-
-        ratio_value = parseInt(value);
+        var ratio_value = parseInt(value);
         if(ratio_value >= 90){
             return Ext.String.format('<p style="color:green">{0}</p>', value);
         }else if(ratio_value >= 50){
@@ -292,12 +570,56 @@ Ext.define('CustomApp', {
         }
     },
 
-    _loadGrid: function(myStore){
+    _loadEpicsGrid: function(myStore)
+    {
+        console.log("_loadEpicsGrid", myStore);
+        jStore = this._getEpicStore(myStore);
 
-        groupedStore = this._getRallyBacklogHealthStore(myStore.getGroups());
+        var epicGrid = Ext.create('Ext.grid.Panel', {
+            title: "Epic Backlog Health",
+            store: jStore,
+            columns:[
+                {text: 'Project', dataIndex: 'project'},
+                {text: 'Team Sprints', dataIndex: 'teamsprints'},
+                {text: 'Target TS', dataIndex: 'targetteamsprints'},
+                {
+                    text: "Ratio", 
+                    dataIndex: "ratio",
+                    renderer: this._colorcode
+                }
+            ]
+        });
+
+        this.add(epicGrid);
+    },
+
+    _loadFeatureGrid: function(myStore)
+    {
+        var groupedStore = this._getFeatureStore(myStore.getGroups());
+
+        var featureGrid = Ext.create('Ext.grid.Panel', {
+            title: "Feature Backlog Health",
+            store: groupedStore,
+            columns:[
+                {text: 'Project', dataIndex: 'project'},
+                {text: 'Team Sprints', dataIndex: 'teamsprints'},
+                {text: 'Target TS', dataIndex: 'targetteamsprints'},
+                {
+                    text: "Ratio", 
+                    dataIndex: "ratio",
+                    renderer: this._colorcode
+                }
+            ]
+        });
+
+        this.add(featureGrid);
+    },
+
+    _loadUserStoryGrid: function(myStore){
+        var groupedStore = this._getUserStoryStore(myStore.getGroups());
 
         var myGrid = Ext.create('Ext.grid.Panel', {
-            title: "Backlog Health",
+            title: "User Story Backlog Health",
             store: groupedStore,
             columns:[
                 { text: 'Project', dataIndex: 'project' },
@@ -315,21 +637,10 @@ Ext.define('CustomApp', {
         });
 
         this.add(myGrid);
+    },
+    //#endregion
 
-    },
 
-    _loadIterations: function(store)
-    {
-        console.log("ITERATIONS LOADED", store);
-    },
-    _loadFeatures: function(store)
-    {
-        console.log("FEATURES LOADED: ", store);
-    },
-    _loadEpics: function(store)
-    {
-        console.log("EPICS LOADED: ", store);
-    }
 
 
 
