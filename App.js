@@ -29,12 +29,22 @@ Ext.define('CustomApp', {
     launch: function() {
 
 
-        this.topPanel = Ext.create('Ext.Panel', {
-         });
-        this.middlePanel = Ext.create('Ext.Panel', {
-         });
-        this.bottomPanel = Ext.create('Ext.Panel', {
-         });
+        this.topPanel = Ext.create('Ext.Panel', {});
+        this.epicLegend = Ext.create('Ext.Panel', {
+            html: "<p>56 is the total number of team sprints available for the train.</p><p>Epics included for this metric are those in Prioritized Backlog or Feature Planning with a Preliminary Estimate populated.</p><p>Green = 90% of the target is full.  Yellow = 50% - 90% of the target is full.  Red = < 50% of the target ts full.</p>"
+        });
+        this.middlePanel = Ext.create('Ext.Panel', {});
+        this.featureLegend = Ext.create('Ext.Panel', {
+            html: "<p>6 is the total number of team sprints per team (IP sprint not included).</p><p>Features included for this metric are those in Ready state with a Preliminary Estimate populated. Next Gen Merchandising represents any features not assigned to a specific team yet.  Next Gen Merch does not need to achieve the goal.</p><p>Green = 90% of the target is full.  Yellow = 50% - 90% of the target is full.  Red = < 50% of the target ts full.</p>"
+        });
+        this.bottomPanel = Ext.create('Ext.Panel', {});
+        this.storyLegend = Ext.create('Ext.Panel', {
+            html: "<p>The velocity for each team is the average of the past 90 days, and the target is twice that velocity.</p><p>Stories included for this metric are those in Idea or Defined state with a plan estimate.  </p><p>Green = 90% of the target is full.  Yellow = 50% - 90% of the target is full.  Red = < 50% of the target ts full.</p>"
+        });
+        this.legendPanel = Ext.create('Ext.Panel', {
+            html: "<h3>Legend</h3><p>TBD</p> "
+
+        });
 
         masterPanel = Ext.create('Ext.panel.Panel', {
             renderTo: Ext.getBody(),
@@ -42,7 +52,7 @@ Ext.define('CustomApp', {
             margin: 20,
             border : true,
             frame : true,
-            items: [this.topPanel, this.middlePanel, this.bottomPanel]
+            items: [this.topPanel, this.epicLegend, this.middlePanel, this.featureLegend, this.bottomPanel, this.storyLegend]
          });
 
         this.add(masterPanel);
