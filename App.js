@@ -27,6 +27,25 @@ Ext.define('CustomApp', {
 
     //#region App Flow
     launch: function() {
+
+
+        this.topPanel = Ext.create('Ext.Panel', {
+         });
+        this.middlePanel = Ext.create('Ext.Panel', {
+         });
+        this.bottomPanel = Ext.create('Ext.Panel', {
+         });
+
+        masterPanel = Ext.create('Ext.panel.Panel', {
+            renderTo: Ext.getBody(),
+            width: 830,
+            margin: 20,
+            border : true,
+            frame : true,
+            items: [this.topPanel, this.middlePanel, this.bottomPanel]
+         });
+
+        this.add(masterPanel);
         this._loadData();
     },
     _loadIterations: function(store)
@@ -564,19 +583,23 @@ Ext.define('CustomApp', {
         var epicGrid = Ext.create('Ext.grid.Panel', {
             title: "Epic Backlog Health",
             store: jStore,
+            width: 800,
+            scrollable: false,
+            titleAlign: 'center',
+            margin: 10,
             columns:[
-                {text: 'Project', dataIndex: 'project'},
-                {text: 'Team Sprints', dataIndex: 'teamsprints'},
-                {text: 'Target TS', dataIndex: 'targetteamsprints'},
+                {text: 'Project', dataIndex: 'project', width: '25%'},
+                {text: 'Team Sprints', dataIndex: 'teamsprints', width: '25%'},
+                {text: 'Target TS', dataIndex: 'targetteamsprints', width: '25%'},
                 {
                     text: "Ratio", 
                     dataIndex: "ratio",
-                    renderer: this._colorcode
+                    renderer: this._colorcode, width: '25%'
                 }
             ]
         });
 
-        this.add(epicGrid);
+        this.topPanel.add(epicGrid);
     },
 
     _loadFeatureGrid: function(myStore)
@@ -585,20 +608,25 @@ Ext.define('CustomApp', {
 
         var featureGrid = Ext.create('Ext.grid.Panel', {
             title: "Feature Backlog Health",
+            scrollable: false,
+            headerBorders:false,
             store: groupedStore,
+            width: 800,
+            margin: 10,
+            titleAlign: 'center',
             columns:[
-                {text: 'Project', dataIndex: 'project'},
-                {text: 'Team Sprints', dataIndex: 'teamsprints'},
-                {text: 'Target TS', dataIndex: 'targetteamsprints'},
+                {text: 'Project', dataIndex: 'project', width: '25%'},
+                {text: 'Team Sprints', dataIndex: 'teamsprints', width: '25%'},
+                {text: 'Target TS', dataIndex: 'targetteamsprints', width: '25%'},
                 {
                     text: "Ratio", 
                     dataIndex: "ratio",
-                    renderer: this._colorcode
+                    renderer: this._colorcode,
+                    width: '25%'
                 }
             ]
         });
-
-        this.add(featureGrid);
+        this.middlePanel.add(featureGrid);
     },
 
     _loadUserStoryGrid: function(myStore){
@@ -606,23 +634,26 @@ Ext.define('CustomApp', {
 
         var myGrid = Ext.create('Ext.grid.Panel', {
             title: "User Story Backlog Health",
+            scrollable: false,
             store: groupedStore,
+            width: 800,
+            margin: 10,
+            titleAlign: 'center',
             columns:[
-                { text: 'Project', dataIndex: 'project' },
-                { text: "Story Count", dataIndex: "storycount"},
-                { text: "Story Points", dataIndex: "totalestimate" },
-                { text: "Average Velocity", dataIndex: "averagevelocity"},
-                { text: "Target Depth", dataIndex: "targetdepth"},
+                { text: 'Project', dataIndex: 'project', width: '20%' },
+                { text: "Story Points", dataIndex: "totalestimate" , width: '20%'},
+                { text: "Average Velocity", dataIndex: "averagevelocity", width: '20%'},
+                { text: "Target Depth", dataIndex: "targetdepth", width: '20%'},
                 { 
                     text: "Ratio Points to Target", 
                     dataIndex: "ratio",
-                    renderer: this._colorcode
+                    renderer: this._colorcode, width: '20%'
                 }
 
             ]
         });
 
-        this.add(myGrid);
+        this.bottomPanel.add(myGrid);
     },
     //#endregion
 
