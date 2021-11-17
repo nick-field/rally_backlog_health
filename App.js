@@ -8,7 +8,7 @@ Ext.define('CustomApp', {
     //Eventually this should be made dynamic.
     _getProjectList: function()
     {
-        project_list =
+        var project_list =
         [ 
             'Austin Avengers - RD',
             'Mountaineers - RD',
@@ -32,12 +32,12 @@ Ext.define('CustomApp', {
     _loadIterations: function(store)
     {
         this.iterations_loaded = true;
-        this._loadFeaturesData();
+        this._loadFeaturesData(store);
     },
     _loadFeatures: function(store)
     {
         this.features_loaded = true;
-        this._loadFeatureGrid(store)
+        this._loadFeatureGrid(store);
         this._loadEpicsData();
     },
     _loadEpics: function(store)
@@ -152,7 +152,7 @@ Ext.define('CustomApp', {
             switch(childrenArray[i].data.PreliminaryEstimate.Name) 
             {
                 case "XS":
-                    totalTeamSprints += .5;
+                    totalTeamSprints += 0.5;
                     break;
                 case "S":
                     totalTeamSprints += 1;
@@ -214,10 +214,10 @@ Ext.define('CustomApp', {
             return projectObject;
         }
 
-        projectObject.project = project_name,
+        projectObject.project = project_name;
         projectObject.teamsprints = this._getFeatureTeamSprints(projectData);
         projectObject.targetteamsprints = 6;
-        var v = projectObject.teamsprints / projectObject.targetteamsprints     
+        var v = projectObject.teamsprints / projectObject.targetteamsprints;
         if(!isFinite(v)){
             v = "-";
         }else{
@@ -257,12 +257,12 @@ Ext.define('CustomApp', {
 
     _buildFeatureJson: function(data)
     {
-        console.log("_buildFeatureJson", data)
+        console.log("_buildFeatureJson", data);
         var _json = {};
         _json.projects = [];
 
-        project_list = this._getProjectList();
-        loaded_projects = [];
+        var project_list = this._getProjectList();
+        var loaded_projects = [];
 
         for (var x=0; x<data.length; x++)
         {
@@ -282,10 +282,10 @@ Ext.define('CustomApp', {
         return _json;
     },
     _buildEpicJson: function(data){
-        console.log("_buildEpicJson", data)
+        console.log("_buildEpicJson", data);
         var _jSon = {};
 
-        _jSon.epics = {}
+        _jSon.epics = {};
 
         _jSon.epics.project = "Merchandising - RD";
         _jSon.epics.targetteamsprints = 8*7;
@@ -573,7 +573,7 @@ Ext.define('CustomApp', {
     _loadEpicsGrid: function(myStore)
     {
         console.log("_loadEpicsGrid", myStore);
-        jStore = this._getEpicStore(myStore);
+        var jStore = this._getEpicStore(myStore);
 
         var epicGrid = Ext.create('Ext.grid.Panel', {
             title: "Epic Backlog Health",
