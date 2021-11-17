@@ -51,7 +51,6 @@ Ext.define('CustomApp', {
     //#region Custom Models
     _getGroupedFeatureModel: function()
     {
-        console.log("_getGroupedFeatureModel");
         var featureModel = Ext.define('feature_model', {
             extend: 'Ext.data.Model',
             fields: [
@@ -106,13 +105,13 @@ Ext.define('CustomApp', {
     {
         var totalEstimate = 0;
 
-
         for(var i=0; i < childrenArray.length; i++){
             totalEstimate = totalEstimate + childrenArray[i].data.PlanEstimate;
         }
 
         return totalEstimate;
     },
+
     _getEpicTeamSprints: function(store){
         var totalTeamSprints = 0;
         for(var i=0; i <store.data.items.length; i++)
@@ -141,14 +140,12 @@ Ext.define('CustomApp', {
 
         return totalTeamSprints;
     },
+
     _getFeatureTeamSprints: function(childrenArray){
         var totalTeamSprints = 0;
 
-        console.log("_getFeatureTeamSprints", childrenArray);
-
         for(var i=0; i <childrenArray.length; i++)
         {
-            console.log("Adding Feature Sprints", childrenArray[i].data.PreliminaryEstimate.Name);
             switch(childrenArray[i].data.PreliminaryEstimate.Name) 
             {
                 case "XS":
@@ -198,11 +195,8 @@ Ext.define('CustomApp', {
 
     //#region Json Builder Functions
     //Note:  There is no _buildProjectEpicJson because there is only one project.  It is all handled in the root _buildEpicJson.
-
     _buildProjectFeatureJson: function(project_name, projectData)
     {
-        console.log("_buildProjectFeatureJson", project_name, projectData);
-
         var projectObject = {};
 
         if(projectData === null)
@@ -224,8 +218,6 @@ Ext.define('CustomApp', {
             v = Math.round(v * 100).toString() + '%';
         }
         projectObject.ratio = v;
-
-        console.log("_buildProjectFeatureJason-RETURN", projectObject);
 
         return projectObject;
     },
@@ -257,7 +249,6 @@ Ext.define('CustomApp', {
 
     _buildFeatureJson: function(data)
     {
-        console.log("_buildFeatureJson", data);
         var _json = {};
         _json.projects = [];
 
@@ -278,11 +269,11 @@ Ext.define('CustomApp', {
                 _json.projects.push(this._buildProjectFeatureJson(project_list[a], null));
             }
         }
-        console.log("_buildFeatureJson-RETURN", _json);
         return _json;
     },
+
     _buildEpicJson: function(data){
-        console.log("_buildEpicJson", data);
+;
         var _jSon = {};
 
         _jSon.epics = {};
@@ -293,8 +284,8 @@ Ext.define('CustomApp', {
         _jSon.epics.ratio =Math.round(_jSon.epics.teamsprints /_jSon.epics.targetteamsprints * 100).toString() +'%';
 
         return _jSon;
-
     },
+
     _buildUserStoryJson: function(data){
 
         var _jSon = {};
@@ -332,8 +323,6 @@ Ext.define('CustomApp', {
     },
     _getEpicStore: function(store){
 
-        console.log("_getEpicStore", store);
-
         var jData = this._buildEpicJson(store);
 
         var rallyEpicStore = Ext.create('Ext.data.JsonStore', {
@@ -354,7 +343,6 @@ Ext.define('CustomApp', {
     _getUserStoryStore: function(groupedData){
 
         var jData = this._buildUserStoryJson(groupedData);
-
 
         var rallybhStore = Ext.create('Ext.data.JsonStore', {
             model: this._getGroupedUserStoryModel(),
@@ -401,7 +389,6 @@ Ext.define('CustomApp', {
 
         var stateFilters = prioritizedBacklogFilter.or(featurePlanningFilter);
 
-        console.log("EPIC FILTER: ", projectFilters.and(stateFilters).toString());
         return projectFilters.and(stateFilters);
 
     },
@@ -572,7 +559,6 @@ Ext.define('CustomApp', {
 
     _loadEpicsGrid: function(myStore)
     {
-        console.log("_loadEpicsGrid", myStore);
         var jStore = this._getEpicStore(myStore);
 
         var epicGrid = Ext.create('Ext.grid.Panel', {
