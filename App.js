@@ -46,7 +46,7 @@ Ext.define('CustomApp', {
 
         });
 
-        masterPanel = Ext.create('Ext.panel.Panel', {
+        var masterPanel = Ext.create('Ext.panel.Panel', {
             renderTo: Ext.getBody(),
             width: 830,
             margin: 20,
@@ -302,7 +302,6 @@ Ext.define('CustomApp', {
     },
 
     _buildEpicJson: function(data){
-;
         var _jSon = {};
 
         _jSon.epics = {};
@@ -652,10 +651,10 @@ Ext.define('CustomApp', {
             columns:[
                 { text: 'Project', dataIndex: 'project', width: '20%' },
                 { text: "Story Points", dataIndex: "totalestimate" , width: '20%'},
-                { text: "Average Velocity", dataIndex: "averagevelocity", width: '20%'},
-                { text: "Target Depth", dataIndex: "targetdepth", width: '20%'},
+                { text: "Avg Velocity (Last 90 Days)", dataIndex: "averagevelocity", width: '20%'},
+                { text: "Target Depth (In Points)", dataIndex: "targetdepth", width: '20%'},
                 { 
-                    text: "Ratio Points to Target", 
+                    text: "Ratio", 
                     dataIndex: "ratio",
                     renderer: this._colorcode, width: '20%'
                 }
