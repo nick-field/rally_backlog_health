@@ -6,6 +6,11 @@ Ext.define('CustomApp', {
     //#region Constants and Hard Coded stuff.
     //This must be either updated to be dynamic, or must be manually updated whenever there is a pojrect name change
     //Eventually this should be made dynamic.
+
+
+    _getTargetTeamSprints_Epic: function(){return 6;},
+    _getTargetTeamSprints_Feature: function(){return 4;},
+    _getTargetSprints_Story: function(){return 2;},
     _getProjectList: function()
     {
         var project_list =
@@ -130,6 +135,51 @@ Ext.define('CustomApp', {
     //#endregion
     
     //#region Helper and Calculation Functions
+
+    _currentQuarterStartDate: function()
+    {
+        var now = new Date();
+        var quarter = Math.floor((now.getMonth()/3));
+        return new Date(now.getFullYear(), quarter * 3, 1);
+    },
+    _currentQuarterEndDate: function()
+    {
+        var now = new Date();
+        var quarter = Math.floor((now.getMonth()/3));
+        var firstDate = new Date(now.getFullYear(), quarter * 3, 1);
+        return new Date(firstDate.getFullYear(), firstDate.getMonth() + 3, 0);
+    },
+    _previousQuarterStartDate: function()
+    {
+        var now = new Date();
+        var quarter = Math.floor((now.getMonth()/3));
+        var year = now.getFullYear();
+        
+        quarter -= 1;
+        if(quarter < 0)
+        {
+            quarter = 3;
+            year -= 1;
+        } 
+
+        return new Date(year, quarter * 3, 1);
+    },
+    _previousQuarterEndDate: function()
+    {
+        var now = new Date();
+        var quarter = Math.floor((now.getMonth()/3));
+        var year = now.getFullYear();
+        
+        quarter -= 1;
+        if(quarter < 0)
+        {
+            quarter = 3;
+            year -= 1;
+        } 
+        
+        firstDate = new Date(year, quarter * 3, 1);
+        return new Date(firstDate.getFullYear(), firstDate.getMonth() + 3, 0);
+    },
     _getEstimateSum: function(childrenArray)
     {
         var totalEstimate = 0;
@@ -212,6 +262,7 @@ Ext.define('CustomApp', {
                 number_of_sprints = groupedIterations[x].children.length;
                 for( var y = 0; y < number_of_sprints; y++)
                 {
+                    console.log(project_name, groupedIterations[x].children[y].get("Name"), groupedIterations[x].children[y].get("PlanEstimate"));
                     plan_estimate += groupedIterations[x].children[y].get('PlanEstimate');
                 }
             }
@@ -232,14 +283,14 @@ Ext.define('CustomApp', {
         {
             projectObject.project = project_name;
             projectObject.teamsprints =0;
-            projectObject.targetteamsprints = 6;
+            projectObject.targetteamsprints = this._getTargetTeamSprints_Feature();
             projectObject.ratio = '0%';
             return projectObject;
         }
 
         projectObject.project = project_name;
         projectObject.teamsprints = this._getFeatureTeamSprints(projectData);
-        projectObject.targetteamsprints = 6;
+        projectObject.targetteamsprints = this._getTargetTeamSprints_Feature();
         var v = projectObject.teamsprints / projectObject.targetteamsprints;
         if(!isFinite(v)){
             v = "-";
@@ -260,7 +311,7 @@ Ext.define('CustomApp', {
         projectObject.storycount = projectData.length;
         projectObject.totalestimate = this._getEstimateSum(projectData);
         projectObject.averagevelocity = Math.round(this._getVelocityForProject(project_name));
-        projectObject.targetdepth = projectObject.averagevelocity * 2;
+        projectObject.targetdepth = projectObject.averagevelocity * this._getTargetSprints_Story();
 
         var v = projectObject.totalestimate / projectObject.targetdepth;
 
@@ -307,7 +358,7 @@ Ext.define('CustomApp', {
         _jSon.epics = {};
 
         _jSon.epics.project = "Merchandising - RD";
-        _jSon.epics.targetteamsprints = 8*7;
+        _jSon.epics.targetteamsprints = this._getProjectList().length * this._getTargetTeamSprints_Epic();
         _jSon.epics.teamsprints = this._getEpicTeamSprints(data);
         _jSon.epics.ratio =Math.round(_jSon.epics.teamsprints /_jSon.epics.targetteamsprints * 100).toString() +'%';
 
@@ -430,27 +481,21 @@ Ext.define('CustomApp', {
     },
     _iterationFilters: function()
     {
+        var prevQuarterStartDate = this._previousQuarterStartDate();
+        var currentDate = new Date();
 
-        var startDate = new Date();
-        var startDate2 = new Date();
-        startDate2.setDate(startDate.getDate() - 90);
-
-        var startDateFilter1 = Ext.create('Rally.data.wsapi.Filter',{
+        var startDateFilter = Ext.create('Rally.data.wsapi.Filter',{
             property: "StartDate",
             operator: ">=",
-            value : startDate2
+            value : prevQuarterStartDate
         });
-
-        var startDateFilter2 = Ext.create('Rally.data.wsapi.Filter',{
+        var endDateFilter = Ext.create('Rally.data.wsapi.Filter',{
             property: "EndDate",
             operator: "<=",
-            value : startDate
+            value : currentDate
         });
 
-
-        
-
-        var filters = startDateFilter1.and(startDateFilter2);
+        var filters = startDateFilter.and(endDateFilter);
         
         console.log(filters.toString());
         return filters;
