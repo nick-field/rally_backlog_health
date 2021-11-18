@@ -6,8 +6,6 @@ Ext.define('CustomApp', {
     //#region Constants and Hard Coded stuff.
     //This must be either updated to be dynamic, or must be manually updated whenever there is a pojrect name change
     //Eventually this should be made dynamic.
-
-
     _getTargetTeamSprints_Epic: function(){return 6;},
     _getTargetTeamSprints_Feature: function(){return 4;},
     _getTargetSprints_Story: function(){return 2;},
@@ -177,7 +175,7 @@ Ext.define('CustomApp', {
             year -= 1;
         } 
         
-        firstDate = new Date(year, quarter * 3, 1);
+        var firstDate = new Date(year, quarter * 3, 1);
         return new Date(firstDate.getFullYear(), firstDate.getMonth() + 3, 0);
     },
     _getEstimateSum: function(childrenArray)
